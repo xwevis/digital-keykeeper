@@ -61,6 +61,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				vault: {
+					gold: 'hsl(var(--vault-gold))',
+					'gold-glow': 'hsl(var(--vault-gold-glow))',
+					blue: 'hsl(var(--vault-blue))',
+					dark: 'hsl(var(--vault-dark))',
+					darker: 'hsl(var(--vault-darker))',
+					surface: 'hsl(var(--vault-surface))',
+					border: 'hsl(var(--vault-border))'
 				}
 			},
 			borderRadius: {

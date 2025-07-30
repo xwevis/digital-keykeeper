@@ -2,41 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Digital Safe Design System - Security & Trust Focused */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Primary - Deep secure blue */
+    --background: 220 25% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 20% 9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 20% 9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 43 96% 56%;
+    --primary-foreground: 220 25% 6%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 12%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 220 25% 6%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 15% 15%;
+    --input: 220 15% 15%;
+    --ring: 43 96% 56%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Custom vault colors */
+    --vault-gold: 43 96% 56%;
+    --vault-gold-glow: 43 96% 66%;
+    --vault-blue: 217 91% 60%;
+    --vault-dark: 220 25% 6%;
+    --vault-darker: 220 30% 4%;
+    --vault-surface: 220 20% 9%;
+    --vault-border: 220 15% 20%;
+    
+    /* Gradients */
+    --gradient-vault: linear-gradient(135deg, hsl(var(--vault-dark)), hsl(var(--vault-surface)));
+    --gradient-gold: linear-gradient(135deg, hsl(var(--vault-gold)), hsl(var(--vault-gold-glow)));
+    --gradient-secure: linear-gradient(45deg, hsl(var(--vault-blue) / 0.1), hsl(var(--vault-gold) / 0.1));
+    
+    /* Shadows */
+    --shadow-vault: 0 25px 50px -12px hsl(var(--vault-dark) / 0.8);
+    --shadow-gold-glow: 0 0 30px hsl(var(--vault-gold) / 0.3);
+    --shadow-secure: 0 10px 30px -10px hsl(var(--vault-blue) / 0.3);
+    
+    /* Animations */
+    --transition-vault: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-secure: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +123,65 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    background: var(--gradient-vault);
+    min-height: 100vh;
+  }
+}
+
+/* Custom Components */
+@layer components {
+  .vault-container {
+    @apply relative overflow-hidden;
+    background: var(--gradient-vault);
+  }
+  
+  .vault-glass {
+    @apply backdrop-blur-sm bg-card/80 border border-vault-border;
+    box-shadow: var(--shadow-vault);
+  }
+  
+  .vault-glow {
+    @apply relative;
+    box-shadow: var(--shadow-gold-glow);
+  }
+  
+  .secure-input {
+    @apply bg-input/50 border-vault-border focus:border-primary;
+    transition: var(--transition-secure);
+  }
+  
+  .pulse-secure {
+    animation: pulse-secure 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@layer utilities {
+  .text-vault-gold {
+    color: hsl(var(--vault-gold));
+  }
+  
+  .bg-vault-surface {
+    background-color: hsl(var(--vault-surface));
+  }
+  
+  .border-vault-border {
+    border-color: hsl(var(--vault-border));
+  }
+  
+  .shadow-vault {
+    box-shadow: var(--shadow-vault);
+  }
+  
+  .transition-vault {
+    transition: var(--transition-vault);
+  }
+}
+
+@keyframes pulse-secure {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .7;
   }
 }

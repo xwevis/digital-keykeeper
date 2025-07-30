@@ -64,6 +64,34 @@ export const useNotes = create<NotesState>()(
     }),
     {
       name: 'notes-storage',
+      // Custom storage to handle Date objects properly
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str) return null;
+          
+          try {
+            const parsed = JSON.parse(str);
+            // Convert date strings back to Date objects
+            if (parsed.state?.notes) {
+              parsed.state.notes = parsed.state.notes.map((note: any) => ({
+                ...note,
+                createdAt: new Date(note.createdAt),
+                updatedAt: new Date(note.updatedAt),
+              }));
+            }
+            return parsed;
+          } catch {
+            return null;
+          }
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+        },
+      },
     }
   )
 );

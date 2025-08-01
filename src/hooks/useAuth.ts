@@ -14,12 +14,12 @@ interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
-  login: (user: User) => void;
+  login: (user: User) => Promise<void>;
   logout: () => void;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   authenticate: (username: string, password: string) => Promise<boolean>;
-  checkTokenValidity: () => void;
-  refreshAuthToken: () => boolean;
+  checkTokenValidity: () => Promise<void>;
+  refreshAuthToken: () => Promise<boolean>;
 }
 
 // Mock users storage (in a real app, this would be handled by backend)
@@ -33,8 +33,8 @@ export const useAuth = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
 
-      login: (user: User) => {
-        const { accessToken, refreshToken } = generateTokens(user.id, user.username, user.email);
+      login: async (user: User) => {
+        const { accessToken, refreshToken } = await generateTokens(user.id, user.username, user.email);
         set({ 
           user, 
           isAuthenticated: true, 
@@ -52,7 +52,7 @@ export const useAuth = create<AuthState>()(
         });
       },
 
-      checkTokenValidity: () => {
+      checkTokenValidity: async () => {
         const { accessToken, refreshToken } = get();
         
         if (!accessToken || !refreshToken) {
@@ -63,21 +63,21 @@ export const useAuth = create<AuthState>()(
         // Check if access token is expired
         if (isTokenExpired(accessToken)) {
           // Try to refresh the token
-          const success = get().refreshAuthToken();
+          const success = await get().refreshAuthToken();
           if (!success) {
             get().logout();
           }
         }
       },
 
-      refreshAuthToken: () => {
+      refreshAuthToken: async () => {
         const { refreshToken } = get();
         
         if (!refreshToken || isTokenExpired(refreshToken)) {
           return false;
         }
 
-        const newAccessToken = refreshAccessToken(refreshToken);
+        const newAccessToken = await refreshAccessToken(refreshToken);
         if (newAccessToken) {
           set({ accessToken: newAccessToken });
           return true;
@@ -111,7 +111,7 @@ export const useAuth = create<AuthState>()(
         mockUsers.set(newUser.id, newUser);
         
         // Auto login after registration
-        get().login({ id: newUser.id, username, email });
+        await get().login({ id: newUser.id, username, email });
         return true;
       },
 
@@ -124,7 +124,7 @@ export const useAuth = create<AuthState>()(
           if (userData.username === username || userData.email === username) {
             const isPasswordValid = await bcrypt.compare(password, userData.password);
             if (isPasswordValid) {
-              get().login({ id: userData.id, username: userData.username, email: userData.email });
+              await get().login({ id: userData.id, username: userData.username, email: userData.email });
               return true;
             }
           }

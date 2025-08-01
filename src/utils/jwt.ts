@@ -1,6 +1,6 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = 'brankas-digital-secret-key-2024'; // In production, use env variable
+const JWT_SECRET = new TextEncoder().encode('brankas-digital-secret-key-2024');
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
@@ -11,26 +11,31 @@ export interface TokenPayload {
   type: 'access' | 'refresh';
 }
 
-export const generateTokens = (userId: string, username: string, email: string) => {
-  const accessToken = jwt.sign(
-    { userId, username, email, type: 'access' },
-    JWT_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
-  );
+export const generateTokens = async (userId: string, username: string, email: string) => {
+  const accessToken = await new SignJWT({ userId, username, email, type: 'access' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+    .sign(JWT_SECRET);
 
-  const refreshToken = jwt.sign(
-    { userId, username, email, type: 'refresh' },
-    JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRY }
-  );
+  const refreshToken = await new SignJWT({ userId, username, email, type: 'refresh' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+    .sign(JWT_SECRET);
 
   return { accessToken, refreshToken };
 };
 
-export const verifyToken = (token: string): TokenPayload | null => {
+export const verifyToken = async (token: string): Promise<TokenPayload | null> => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    return decoded;
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return {
+      userId: payload.userId as string,
+      username: payload.username as string,
+      email: payload.email as string,
+      type: payload.type as 'access' | 'refresh'
+    };
   } catch (error) {
     return null;
   }
@@ -38,33 +43,36 @@ export const verifyToken = (token: string): TokenPayload | null => {
 
 export const isTokenExpired = (token: string): boolean => {
   try {
-    const decoded = jwt.decode(token) as any;
-    if (!decoded || !decoded.exp) return true;
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return true;
     
     const currentTime = Date.now() / 1000;
-    return decoded.exp < currentTime;
+    return payload.exp < currentTime;
   } catch {
     return true;
   }
 };
 
-export const refreshAccessToken = (refreshToken: string): string | null => {
-  const payload = verifyToken(refreshToken);
+export const refreshAccessToken = async (refreshToken: string): Promise<string | null> => {
+  const payload = await verifyToken(refreshToken);
   
   if (!payload || payload.type !== 'refresh') {
     return null;
   }
 
-  const newAccessToken = jwt.sign(
-    { 
-      userId: payload.userId, 
-      username: payload.username, 
-      email: payload.email, 
-      type: 'access' 
-    },
-    JWT_SECRET,
-    { expiresIn: ACCESS_TOKEN_EXPIRY }
-  );
+  const newAccessToken = await new SignJWT({ 
+    userId: payload.userId, 
+    username: payload.username, 
+    email: payload.email, 
+    type: 'access' 
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+    .sign(JWT_SECRET);
 
   return newAccessToken;
 };

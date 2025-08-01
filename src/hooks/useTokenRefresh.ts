@@ -8,12 +8,15 @@ export const useTokenRefresh = () => {
     if (!isAuthenticated) return;
 
     // Check token validity every 5 minutes
-    const interval = setInterval(() => {
-      checkTokenValidity();
+    const interval = setInterval(async () => {
+      await checkTokenValidity();
     }, 5 * 60 * 1000);
 
     // Check immediately on mount
-    checkTokenValidity();
+    const checkTokens = async () => {
+      await checkTokenValidity();
+    };
+    checkTokens();
 
     return () => clearInterval(interval);
   }, [isAuthenticated, checkTokenValidity]);

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import bcrypt from 'bcryptjs';
 
 interface User {
   id: string;
@@ -44,12 +45,15 @@ export const useAuth = create<AuthState>()(
           }
         }
 
+        // Hash password with bcrypt (salt rounds: 12)
+        const hashedPassword = await bcrypt.hash(password, 12);
+
         // Create new user
         const newUser = {
           id: Math.random().toString(36).substr(2, 9),
           username,
           email,
-          password // In real app, this would be hashed
+          password: hashedPassword
         };
         
         mockUsers.set(newUser.id, newUser);
@@ -63,11 +67,14 @@ export const useAuth = create<AuthState>()(
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Find user
+        // Find user and verify password with bcrypt
         for (const [, userData] of mockUsers) {
-          if ((userData.username === username || userData.email === username) && userData.password === password) {
-            get().login({ id: userData.id, username: userData.username, email: userData.email });
-            return true;
+          if (userData.username === username || userData.email === username) {
+            const isPasswordValid = await bcrypt.compare(password, userData.password);
+            if (isPasswordValid) {
+              get().login({ id: userData.id, username: userData.username, email: userData.email });
+              return true;
+            }
           }
         }
         

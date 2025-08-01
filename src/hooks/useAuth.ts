@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import bcrypt from 'bcryptjs';
+import { generateTokens, verifyToken, isTokenExpired, refreshAccessToken } from '@/utils/jwt';
 
 interface User {
   id: string;
@@ -11,10 +12,14 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  accessToken: string | null;
+  refreshToken: string | null;
   login: (user: User) => void;
   logout: () => void;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   authenticate: (username: string, password: string) => Promise<boolean>;
+  checkTokenValidity: () => void;
+  refreshAuthToken: () => boolean;
 }
 
 // Mock users storage (in a real app, this would be handled by backend)
@@ -25,13 +30,60 @@ export const useAuth = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      accessToken: null,
+      refreshToken: null,
 
       login: (user: User) => {
-        set({ user, isAuthenticated: true });
+        const { accessToken, refreshToken } = generateTokens(user.id, user.username, user.email);
+        set({ 
+          user, 
+          isAuthenticated: true, 
+          accessToken, 
+          refreshToken 
+        });
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        set({ 
+          user: null, 
+          isAuthenticated: false, 
+          accessToken: null, 
+          refreshToken: null 
+        });
+      },
+
+      checkTokenValidity: () => {
+        const { accessToken, refreshToken } = get();
+        
+        if (!accessToken || !refreshToken) {
+          get().logout();
+          return;
+        }
+
+        // Check if access token is expired
+        if (isTokenExpired(accessToken)) {
+          // Try to refresh the token
+          const success = get().refreshAuthToken();
+          if (!success) {
+            get().logout();
+          }
+        }
+      },
+
+      refreshAuthToken: () => {
+        const { refreshToken } = get();
+        
+        if (!refreshToken || isTokenExpired(refreshToken)) {
+          return false;
+        }
+
+        const newAccessToken = refreshAccessToken(refreshToken);
+        if (newAccessToken) {
+          set({ accessToken: newAccessToken });
+          return true;
+        }
+        
+        return false;
       },
 
       register: async (username: string, email: string, password: string) => {
@@ -86,7 +138,15 @@ export const useAuth = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Check token validity on app load
+        if (state) {
+          state.checkTokenValidity();
+        }
+      },
     }
   )
 );
